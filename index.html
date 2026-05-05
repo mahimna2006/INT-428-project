@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Brew & Bloom Café — AI Chatbot</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: linear-gradient(135deg, #F5EDE0 0%, #EAD8C0 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  /* ─── MAIN LAYOUT ─── */
+  .app-wrapper {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    max-width: 980px;
+    height: 700px;
+  }
+
+  /* ─── CHAT PANEL ─── */
+  .chat-wrapper {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 12px 48px rgba(44,24,16,0.18);
+    background: #fff;
+    min-width: 0;
+  }
+
+  .chat-header {
+    background: #2C1810;
+    padding: 16px 22px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .cafe-logo {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: #D4A05A;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  .cafe-name {
+    font-family: 'Playfair Display', serif;
+    color: #F5E6C8;
+    font-size: 17px;
+    font-weight: 600;
+  }
+
+  .cafe-status {
+    font-size: 11px;
+    color: #A8C090;
+    display: flex; align-items: center; gap: 5px;
+    margin-top: 2px;
+  }
+
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #A8C090; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .ai-badge {
+    margin-left: auto;
+    background: rgba(212,160,90,0.2);
+    border: 1px solid #D4A05A;
+    color: #D4A05A;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: #FBF7F2;
+  }
+
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: #D4C5B0; border-radius: 2px; }
+
+  .msg-row { display: flex; gap: 10px; align-items: flex-end; }
+  .msg-row.user { flex-direction: row-reverse; }
+
+  .msg-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: #2C1810;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    flex-shrink: 0;
+    color: #D4A05A;
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+  }
+
+  .msg-bubble {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+  }
+
+  .msg-row.bot .msg-bubble {
+    background: #fff;
+    border: 1px solid #E8DDD0;
+    border-bottom-left-radius: 4px;
+    color: #2C1810;
+  }
+
+  .msg-row.user .msg-bubble {
+    background: #2C1810;
+    color: #F5E6C8;
+    border-bottom-right-radius: 4px;
+  }
+
+  .typing-bubble {
+    background: #fff;
+    border: 1px solid #E8DDD0;
+    border-radius: 16px;
+    border-bottom-left-radius: 4px;
+    padding: 13px 18px;
+    display: flex; gap: 5px; align-items: center;
+  }
+
+  .typing-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: #B8956A;
+    animation: bounce 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes bounce {
+    0%,60%,100% { transform: translateY(0); opacity: 0.45; }
+    30% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  .quick-chips {
+    display: flex; flex-wrap: wrap; gap: 7px;
+    padding-left: 40px;
+  }
+
+  .chip {
+    font-size: 12px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid #C8A870;
+    background: #FEF9F2;
+    color: #7A4E2A;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s;
+  }
+  .chip:hover { background: #F5E6C8; }
+
+  .chat-input-area {
+    padding: 12px 16px;
+    background: #fff;
+    border-top: 1px solid #E8DDD0;
+    display: flex; gap: 10px; align-items: flex-end;
+    flex-shrink: 0;
+  }
+
+  .api-key-area {
+    padding: 8px 16px;
+    background: #FBF7F2;
+    border-top: 1px solid #E8DDD0;
+    display: flex; gap: 8px; align-items: center;
+    flex-shrink: 0;
+  }
+
+  .api-key-area input {
+    flex: 1;
+    border: 1px solid #E0D5C5;
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: 'DM Sans', sans-serif;
+    color: #2C1810;
+    background: #fff;
+    outline: none;
+  }
+
+  .api-key-area input:focus { border-color: #B8956A; }
+  .api-key-area label { font-size: 11px; color: #7A4E2A; white-space: nowrap; font-weight: 500; }
+
+  .api-save-btn {
+    padding: 5px 12px;
+    background: #2C1810;
+    color: #F5E6C8;
+    border: none;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    white-space: nowrap;
+  }
+  .api-save-btn:hover { background: #4A2A18; }
+
+  textarea {
+    flex: 1;
+    border: 1px solid #E0D5C5;
+    border-radius: 22px;
+    padding: 10px 16px;
+    font-size: 13.5px;
+    font-family: 'DM Sans', sans-serif;
+    color: #2C1810;
+    background: #FBF7F2;
+    outline: none;
+    resize: none;
+    line-height: 1.4;
+    max-height: 100px;
+    overflow-y: auto;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: #B8956A; }
+  textarea::placeholder { color: #B0A090; }
+
+  .send-btn {
+    width: 40px; height: 40px;
+    border-radius: 50%;
+    background: #2C1810;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s, transform 0.1s;
+  }
+  .send-btn:hover { background: #4A2A18; }
+  .send-btn:active { transform: scale(0.94); }
+
+  /* ─── ORDER PANEL ─── */
+  .order-panel {
+    width: 280px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .order-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(44,24,16,0.12);
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .order-header {
+    background: #2C1810;
+    padding: 14px 18px;
+    color: #F5E6C8;
+    font-family: 'Playfair Display', serif;
+    font-size: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .order-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .order-empty {
+    text-align: center;
+    color: #B0A090;
+    font-size: 12.5px;
+    padding: 24px 12px;
+    line-height: 1.6;
+  }
+
+  .order-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    background: #FBF7F2;
+    border-radius: 10px;
+    border: 1px solid #EDE3D8;
+  }
+
+  .order-item-name {
+    flex: 1;
+    font-size: 12px;
+    color: #2C1810;
+    font-weight: 500;
+  }
+
+  .order-item-qty {
+    display: flex; align-items: center; gap: 4px;
+  }
+
+  .qty-btn {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 1px solid #C8A870;
+    background: #fff;
+    color: #7A4E2A;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+    padding: 0;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .qty-btn:hover { background: #F5E6C8; }
+
+  .qty-num {
+    font-size: 12px;
+    font-weight: 500;
+    color: #2C1810;
+    min-width: 16px;
+    text-align: center;
+  }
+
+  .order-item-price {
+    font-size: 12px;
+    color: #7A4E2A;
+    font-weight: 500;
+  }
+
+  .order-footer {
+    padding: 12px;
+    border-top: 1px solid #E8DDD0;
+    background: #fff;
+  }
+
+  .order-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .order-total-label {
+    font-size: 13px;
+    color: #7A4E2A;
+    font-weight: 500;
+  }
+
+  .order-total-amount {
+    font-size: 16px;
+    color: #2C1810;
+    font-weight: 600;
+    font-family: 'Playfair Display', serif;
+  }
+
+  .place-order-btn {
+    width: 100%;
+    padding: 10px;
+    background: #2C1810;
+    color: #F5E6C8;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.15s, transform 0.1s;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .place-order-btn:hover { background: #4A2A18; }
+  .place-order-btn:active { transform: scale(0.98); }
+  .place-order-btn:disabled { background: #B0A090; cursor: default; transform: none; }
+
+  .clear-btn {
+    width: 100%;
+    padding: 7px;
+    background: transparent;
+    color: #B0A090;
+    border: 1px solid #E8DDD0;
+    border-radius: 8px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    margin-top: 6px;
+    transition: background 0.15s;
+  }
+  .clear-btn:hover { background: #FBF7F2; color: #7A4E2A; }
+
+  /* ─── NOTIFICATION ─── */
+  .notification-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+  }
+
+  .notification {
+    background: #2C1810;
+    color: #F5E6C8;
+    padding: 14px 18px;
+    border-radius: 14px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    box-shadow: 0 8px 32px rgba(44,24,16,0.3);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    max-width: 320px;
+    pointer-events: auto;
+    animation: slideIn 0.3s ease;
+    border-left: 3px solid #D4A05A;
+  }
+
+  .notification.success { border-left-color: #7CBB5A; }
+  .notification.info { border-left-color: #5A9CBB; }
+
+  @keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(110%); opacity: 0; }
+  }
+
+  .notif-icon { font-size: 18px; flex-shrink: 0; }
+  .notif-title { font-weight: 500; color: #F5E6C8; margin-bottom: 2px; }
+  .notif-body { font-size: 12px; color: #C8B89A; line-height: 1.5; }
+
+  /* ─── HISTORY / MEMORY INDICATOR ─── */
+  .memory-badge {
+    font-size: 10px;
+    background: rgba(212,160,90,0.15);
+    color: #D4A05A;
+    padding: 2px 6px;
+    border-radius: 10px;
+    border: 1px solid rgba(212,160,90,0.3);
+  }
+
+  /* ─── MENU QUICK PANEL ─── */
+  .menu-quick {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(44,24,16,0.12);
+    padding: 12px;
+    flex-shrink: 0;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .menu-quick-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: #7A4E2A;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #E8DDD0;
+  }
+
+  .menu-quick-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px 0;
+    font-size: 12px;
+    border-bottom: 1px solid #F0E8E0;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-radius: 4px;
+    padding: 5px 6px;
+  }
+  .menu-quick-item:hover { background: #FBF7F2; }
+  .menu-quick-item:last-child { border-bottom: none; }
+
+  .menu-item-name { color: #2C1810; flex: 1; }
+  .menu-item-price { color: #7A4E2A; font-weight: 500; }
+  .add-to-cart {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: #2C1810;
+    color: #F5E6C8;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex; align-items: center; justify-content: center;
+    margin-left: 8px;
+    flex-shrink: 0;
+    transition: transform 0.1s;
+  }
+  .add-to-cart:hover { background: #4A2A18; transform: scale(1.1); }
+
+  /* ─── ORDER PROGRESS ─── */
+  .order-progress {
+    display: none;
+    padding: 10px 12px;
+    background: #FBF7F2;
+    border-top: 1px solid #E8DDD0;
+    font-size: 11px;
+    color: #7A4E2A;
+    text-align: center;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+  }
+  .order-progress.visible { display: flex; }
+
+  .progress-bar {
+    flex: 1;
+    height: 4px;
+    background: #E8DDD0;
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: #D4A05A;
+    border-radius: 2px;
+    transition: width 0.5s ease;
+  }
+</style>
+</head>
+<body>
+
+<div class="notification-container" id="notifContainer"></div>
+
+<div class="app-wrapper">
+
+  <!-- ─── CHAT PANEL ─── -->
+  <div class="chat-wrapper">
+    <div class="chat-header">
+      <div class="cafe-logo">☕</div>
+      <div>
+        <div class="cafe-name">Brew & Bloom Café</div>
+        <div class="cafe-status">
+          <span class="status-dot"></span>
+          <span id="statusText">Groq Llama 3 — Checking Key</span>
+          <span class="memory-badge" id="memBadge">0 msgs</span>
+        </div>
+      </div>
+      <div class="ai-badge">✦ Groq Llama 3</div>
+    </div>
+
+    <div class="api-key-area">
+      <label>Groq Key:</label>
+      <input type="password" id="apiKeyInput" placeholder="Enter API key and click Save..."/>
+      <button class="api-save-btn" onclick="saveApiKey()">Save</button>
+    </div>
+
+    <div class="chat-messages" id="messages"></div>
+
+    <div class="order-progress" id="orderProgress">
+      <span id="progressLabel">Preparing…</span>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+    </div>
+
+    <div class="chat-input-area">
+      <textarea id="userInput" placeholder="Ask about menu, place an order, hours…" rows="1"></textarea>
+      <button class="send-btn" onclick="sendMessage()">
+        <svg width="17" height="17" fill="#F5E6C8" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── RIGHT PANEL ─── -->
+  <div class="order-panel">
+
+    <div class="menu-quick">
+      <div class="menu-quick-title">Quick Order Menu</div>
+      <div id="quickMenuList"></div>
+    </div>
+
+    <div class="order-card">
+      <div class="order-header">🛒 Your Order</div>
+      <div class="order-list" id="orderList">
+        <div class="order-empty">Your cart is empty.</div>
+      </div>
+      <div class="order-footer">
+        <div class="order-total">
+          <span class="order-total-label">Total</span>
+          <span class="order-total-amount" id="orderTotal">₹0</span>
+        </div>
+        <button class="place-order-btn" id="placeOrderBtn" onclick="placeOrder()" disabled>✦ Place Order</button>
+        <button class="clear-btn" onclick="clearCart()">Clear cart</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+//  CAFÉ DATA
+// ─────────────────────────────────────────────
+const CAFE = {
+  name: "Brew & Bloom Café",
+  phone: "98765 43210",
+  address: "42 Maple Street, Downtown District",
+  hours: { "Monday–Friday": "7:00 AM – 8:00 PM", "Saturday": "8:00 AM – 9:00 PM", "Sunday": "9:00 AM – 6:00 PM" },
+  menu: {
+    "Hot Drinks": [
+      { name: "Espresso", price: 120 }, { name: "Americano", price: 150 }, { name: "Cappuccino", price: 200 },
+      { name: "Latte", price: 220, note: "vanilla, caramel, hazelnut, lavender" }, { name: "Flat White", price: 200 },
+      { name: "Chai Latte", price: 180 }, { name: "Matcha Latte", price: 230 }, { name: "Hot Chocolate", price: 180 }
+    ],
+    "Cold Drinks": [
+      { name: "Iced Latte", price: 250 }, { name: "Cold Brew", price: 220 }, { name: "Iced Matcha", price: 250 },
+      { name: "Seasonal Frappé", price: 280 }
+    ],
+    "Food": [
+      { name: "Croissant", price: 180 }, { name: "Avocado Toast", price: 350 }, { name: "Banana Bread", price: 150 },
+      { name: "Egg & Cheese Sandwich", price: 320 }, { name: "Seasonal Quiche", price: 380 }, { name: "Fruit Granola Bowl", price: 300 }
+    ]
+  },
+  specials: ["☀️ Morning Combo — 15% off before 10 AM", "🎟️ Loyalty Card — every 10th drink is FREE"]
+};
+
+const FLAT_MENU = [];
+for (const cat in CAFE.menu) { CAFE.menu[cat].forEach(i => FLAT_MENU.push({ ...i, category: cat })); }
+
+// ─────────────────────────────────────────────
+//  API & AUTO-SAVE LOGIC
+// ─────────────────────────────────────────────
+let GROQ_API_KEY = localStorage.getItem('groq_api_key') || '';
+const GROQ_MODEL = 'llama-3.1-8b-instant';
+
+async function saveApiKey() {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { showNotification('⚠️', 'Empty Key', 'Please paste your key.', 'info'); return; }
+  
+  const btn = document.querySelector('.api-save-btn');
+  btn.textContent = 'Verifying…'; btn.disabled = true;
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` },
+      body: JSON.stringify({ model: GROQ_MODEL, messages: [{ role: 'user', content: 'hi' }], max_tokens: 5 })
+    });
+
+    if (res.ok) {
+      GROQ_API_KEY = key;
+      localStorage.setItem('groq_api_key', key);
+      document.getElementById('apiKeyInput').placeholder = '✅ Key Verified';
+      document.getElementById('statusText').textContent = 'Groq Llama 3 — Ready';
+      showNotification('✅', 'Key Saved', 'Bot is now ready.', 'success');
+    } else { throw new Error('Invalid key'); }
+  } catch (err) {
+    showNotification('❌', 'Error', 'Key verification failed.', '');
+  }
+  btn.textContent = 'Save'; btn.disabled = false;
+}
+
+// ─────────────────────────────────────────────
+//  CHAT & ORDER CORE
+// ─────────────────────────────────────────────
+let conversationHistory = [];
+let cart_items = [];
+
+function init() {
+  if (GROQ_API_KEY) {
+    document.getElementById('statusText').textContent = 'Groq Llama 3 — Ready';
+    document.getElementById('apiKeyInput').placeholder = '✅ Key Active';
+  }
+  buildQuickMenu();
+  renderCart();
+  addMsg("Hi there! Welcome to Brew & Bloom Café ☕. What can I get for you today?", 'bot');
+  addChips(["See menu 🍽️", "Cappuccino ☕", "Hours 🕐", "Today's specials 🎉"]);
+}
+
+async function callGemini(userMsg) {
+  if (!GROQ_API_KEY) return getFallbackResponse(userMsg);
+  
+  conversationHistory.push({ role: 'user', content: userMsg });
+  updateMemBadge();
+
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${GROQ_API_KEY}` },
+      body: JSON.stringify({
+        model: GROQ_MODEL,
+        messages: [{ role: 'system', content: buildSystemPrompt() }, ...conversationHistory],
+        temperature: 0.7
+      })
+    });
+    const data = await res.json();
+    const reply = data.choices[0].message.content;
+    conversationHistory.push({ role: 'assistant', content: reply });
+    return reply;
+  } catch (err) { return getFallbackResponse(userMsg); }
+}
+
+function buildSystemPrompt() {
+  const menuStr = FLAT_MENU.map(i => `${i.name}: ₹${i.price}`).join(', ');
+  return `You are a friendly café bot for Brew & Bloom. Menu: ${menuStr}. 
+  If user orders, add at end: ORDER_ACTION: {"action":"add","item":"ItemName","qty":1}`;
+}
+
+// ─────────────────────────────────────────────
+//  UI HELPERS
+// ─────────────────────────────────────────────
+function renderCart() {
+  const list = document.getElementById('orderList');
+  let total = 0;
+  if (cart_items.length === 0) {
+    list.innerHTML = '<div class="order-empty">Your cart is empty.</div>';
+    document.getElementById('placeOrderBtn').disabled = true;
+  } else {
+    list.innerHTML = cart_items.map(i => {
+      total += i.price * i.qty;
+      return `<div class="order-item"><div class="order-item-name">${i.name} x${i.qty}</div><div class="order-item-price">₹${i.price*i.qty}</div></div>`;
+    }).join('');
+    document.getElementById('placeOrderBtn').disabled = false;
+  }
+  document.getElementById('orderTotal').textContent = `₹${total}`;
+}
+
+function addToCart(name, qty = 1) {
+  const item = FLAT_MENU.find(i => i.name.toLowerCase().includes(name.toLowerCase()));
+  if (!item) return;
+  const existing = cart_items.find(i => i.name === item.name);
+  existing ? existing.qty += qty : cart_items.push({ ...item, qty });
+  renderCart();
+  showNotification('🛒', 'Added', `${item.name} added to cart.`, 'success');
+}
+
+function clearCart() { cart_items = []; renderCart(); }
+
+function addMsg(text, type) {
+  const row = document.createElement('div');
+  row.className = `msg-row ${type}`;
+  row.innerHTML = `<div class="msg-bubble">${text}</div>`;
+  document.getElementById('messages').appendChild(row);
+  document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+}
+
+function showTyping() {
+  const div = document.createElement('div'); div.id = 'typing'; div.className = 'msg-row bot';
+  div.innerHTML = '<div class="typing-bubble">...</div>';
+  document.getElementById('messages').appendChild(div);
+}
+
+function hideTyping() { document.getElementById('typing')?.remove(); }
+
+async function handleInput(text) {
+  if (!text.trim()) return;
+  addMsg(text, 'user');
+  showTyping();
+  let reply = await callGemini(text);
+  hideTyping();
+  
+  const match = reply.match(/ORDER_ACTION:\s*(\{.*?\})/);
+  if (match) {
+    const action = JSON.parse(match[1]);
+    if (action.action === 'add') addToCart(action.item, action.qty);
+    reply = reply.replace(/ORDER_ACTION:\s*\{.*?\}/g, '').trim();
+  }
+  addMsg(reply, 'bot');
+}
+
+function sendMessage() { handleInput(document.getElementById('userInput').value); document.getElementById('userInput').value = ''; }
+
+function buildQuickMenu() {
+  document.getElementById('quickMenuList').innerHTML = FLAT_MENU.slice(0, 6).map(i => 
+    `<div class="menu-quick-item" onclick="addToCart('${i.name}')"><span>${i.name}</span><span>₹${i.price}</span></div>`
+  ).join('');
+}
+
+function updateMemBadge() { document.getElementById('memBadge').textContent = `${conversationHistory.length} msgs`; }
+
+function showNotification(icon, title, body, type) {
+  const c = document.getElementById('notifContainer');
+  const n = document.createElement('div');
+  n.className = `notification ${type}`;
+  n.innerHTML = `<div>${icon}</div><div><b>${title}</b><br>${body}</div>`;
+  c.appendChild(n);
+  setTimeout(() => n.remove(), 3500);
+}
+
+function getFallbackResponse(input) { return "I'm working in offline mode right now! You can still browse the menu or try entering your API key above. ☕"; }
+
+function addChips(labels) {
+  const wrap = document.createElement('div'); wrap.className = 'quick-chips';
+  labels.forEach(l => {
+    const b = document.createElement('button'); b.className = 'chip'; b.textContent = l;
+    b.onclick = () => handleInput(l); wrap.appendChild(b);
+  });
+  document.getElementById('messages').appendChild(wrap);
+}
+
+init();
+</script>
+</body>
+</html>
